@@ -1,4 +1,4 @@
-Test_WheelCheckpackage 程序组代码练习;
+package org.firstinspires.ftc.teamcode.Exercise;
 
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;

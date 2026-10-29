@@ -1,4 +1,4 @@
-package 程序组代码练习;
+package org.firstinspires.ftc.teamcode.Exercise;
 
 import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
 import com.qualcomm.robotcore.hardware.DcMotor;
