@@ -7,6 +7,13 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 /**
  * 32477 Biobuzz 赛季初代车手动程序 (TeleOp_V_0)
  * 依赖硬件类：RobotHardwareV0
+ *
+ * 键位说明：
+ * - LB: 进料开关切换（松开 A 后恢复此状态）
+ * - A (按住): 强制进料反转吐球，松开结束
+ * - RB: 发射轮开关切换
+ * - 右扳机: 射球（需进料开 + 发射轮开）
+ * - Dpad 上 / 左右 / 下: 前部双舵机三档位切换
  */
 @TeleOp(name = "TeleOp_V_0", group = "Competition")
 public class TeleOp_V_0 extends LinearOpMode {
@@ -82,15 +89,22 @@ public class TeleOp_V_0 extends LinearOpMode {
             }
             robot.setFrontServosMode(currentServoMode);
 
-            // ---------- 机构状态执行 ----------
-            double intakePower = robot.setIntakeActive(intakeOn);
-            robot.setShooterActive(shooterOn);
+            // ---------- 进料执行（按住 A 键优先反转吐球，松开恢复 LB 状态） ----------
+            boolean intakeReverseHold = gamepad1.a;
+            double intakePower;
+            if (intakeReverseHold) {
+                intakePower = robot.setIntakeReverse();
+            } else {
+                intakePower = robot.setIntakeActive(intakeOn);
+            }
 
+            // ---------- 发射执行 ----------
+            robot.setShooterActive(shooterOn);
             boolean shooterReady = robot.isShooterReady(shooterOn);
 
             // ---------- 右扳机射球 ----------
             boolean trigger = gamepad1.right_trigger > 0.5;
-            if (trigger && !triggerPrev && shooterReady && intakeOn) {
+            if (trigger && !triggerPrev && shooterReady && intakeOn && !intakeReverseHold) {
                 feedUntil = timer.milliseconds() + RobotHardwareV0.FEED_TIME_MS;
             }
             triggerPrev = trigger;
@@ -100,6 +114,9 @@ public class TeleOp_V_0 extends LinearOpMode {
             double feedPos;
             if (firing) {
                 feedPos = robot.runFeedServo(true);
+            } else if (intakeReverseHold) {
+                // 按住 A 反转吐球时，0口舵机同步向退球方向辅助退出
+                feedPos = robot.runFeedServo(false);
             } else if (intakeOn) {
                 feedPos = robot.runFeedServo(false);
             } else {
@@ -109,7 +126,8 @@ public class TeleOp_V_0 extends LinearOpMode {
             // ---------- 遥测反馈 ----------
             telemetry.addData("摇杆", "前进 %.2f | 平移 %.2f | 旋转 %.2f", rawAxial, rawLateral, rawYaw);
             telemetry.addData("底盘", "LF %.2f RF %.2f LB %.2f RB %.2f", wheelPowers[0], wheelPowers[1], wheelPowers[2], wheelPowers[3]);
-            telemetry.addData("进料 (LB)", "%s  功率 %.2f", intakeOn ? "开" : "关", intakePower);
+            telemetry.addData("进料 (LB/按住A反转)", "%s  功率 %.2f",
+                    intakeReverseHold ? "【反转吐球中】" : (intakeOn ? "开" : "关"), intakePower);
             telemetry.addData("发射 (RB)", "%s  功率 %.2f", shooterOn ? "开" : "关", shooterOn ? RobotHardwareV0.SHOOTER_POWER : 0.0);
             telemetry.addData("前舵机档位 (Dpad)", "当前模式: %s", currentServoMode);
             telemetry.addData("射球", firing ? String.format("同向出球，还剩 %.0f ms", feedUntil - now) : "就绪（按右扳机）");
@@ -130,7 +148,7 @@ public class TeleOp_V_0 extends LinearOpMode {
         telemetry.addData("进料/发射", "intake: %s | shooterL/R: %s", robot.intake != null, robot.shooterL != null);
         telemetry.addData("舵机", "进料舵机(0): %s | 上方(1): %s | 下方(2): %s", robot.feedServo != null, robot.frontUpper != null, robot.frontLower != null);
         telemetry.addLine("------------------------------------");
-        telemetry.addLine("LB = 进料开关   RB = 发射轮开关   右扳机 = 射球");
+        telemetry.addLine("LB = 进料开关   按住A = 反转吐球   RB = 发射轮开关   右扳机 = 射球");
         telemetry.addLine("十字键上(初始)=1口42°/2口75° | 左右=1口9°/2口42° | 下=1口0°/2口33°");
         telemetry.update();
     }

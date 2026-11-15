@@ -13,11 +13,7 @@ import java.util.Map;
 /**
  * 32477 Biobuzz 赛季初代车硬件类 (V0)
  * 更新：
- * 1. 前部双舵机三档位实测数据：
- *    - LIFT (上键/初始): 2口 75° / 1口 42°
- *    - MIDDLE (左右键): 2口 42° / 1口 9°
- *    - DOWN (下键): 2口 33° / 1口 0°
- * 2. 发射轮功率调整为 0.6
+ * - 新增 setIntakeReverse() 方法支持按住 A 键反转吐球
  */
 public class RobotHardwareV0 {
 
@@ -170,9 +166,18 @@ public class RobotHardwareV0 {
         return new double[]{lf, rf, lb, rb};
     }
 
+    /** 正常进料开关控制 */
     public double setIntakeActive(boolean active) {
         if (intake == null) return 0.0;
         double power = active ? (INTAKE_REVERSED ? -INTAKE_POWER : INTAKE_POWER) : 0.0;
+        intake.setPower(power);
+        return power;
+    }
+
+    /** 进料电机反转吐球（按住 A 键时调用） */
+    public double setIntakeReverse() {
+        if (intake == null) return 0.0;
+        double power = INTAKE_REVERSED ? INTAKE_POWER : -INTAKE_POWER;
         intake.setPower(power);
         return power;
     }
