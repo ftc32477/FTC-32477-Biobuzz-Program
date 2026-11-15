@@ -13,8 +13,8 @@ import java.util.Map;
 /**
  * 32477 Biobuzz 赛季初代车硬件类 (V0)
  * 更新：
- * 1. 前部双舵机支持三档位独立控制（放下贴地、中置挡球、抬起）
- * 2. 纯 Power 发射驱动，连续舵机加速
+ * 1. 更新了前部双舵机三档位角度（DOWN=12.0, MIDDLE=45.0, LIFT=75.0）
+ * 2. 连续舵机 FEED_SPEED 提升至 0.50（拉满到极限速度）
  */
 public class RobotHardwareV0 {
 
@@ -42,12 +42,13 @@ public class RobotHardwareV0 {
     public static final double SHOOTER_POWER = 0.6;
     public static final boolean SHOOTER_R_REVERSED = true;
 
-    public static final double FEED_SPEED = 0.40;
+    /** 0 口连续旋转舵机参数：拉满到 0.50 追求最快转速 */
+    public static final double FEED_SPEED = 0.50;
     public static final long FEED_TIME_MS = 1000L;
     public static final boolean FEED_SERVO_REVERSED = true;
 
     // ========================================================================
-    // 3. 前部双舵机三档位参数（在此处微调角度）
+    // 3. 前部双舵机三档位参数（已更新）
     // ========================================================================
     public static final double FRONT_RANGE_DEG = 180.0;
     public static final boolean UPPER_REVERSED = false;
@@ -59,7 +60,6 @@ public class RobotHardwareV0 {
     public static final double LOWER_DEG_MIDDLE = 45.0; // 档位2：中置挡球
     public static final double LOWER_DEG_LIFT = 75.0;   // 档位3：抬起
 
-    // 舵机档位枚举
     public enum ServoPositionMode {
         DOWN,   // 放下贴地
         MIDDLE, // 中置挡球
@@ -190,7 +190,11 @@ public class RobotHardwareV0 {
 
     public double runFeedServo(boolean sameAsIntake) {
         double dir = (FEED_SERVO_REVERSED ? -1.0 : 1.0) * (INTAKE_REVERSED ? -1.0 : 1.0);
-        double pos = clamp01(0.5 + dir * (sameAsIntake ? FEED_SPEED : -FEED_SPEED));
+
+        // 如果不是同向出球（即处于防走火的反转状态），给予更大的速度权重甚至顶到极限 0.0 或 1.0
+        double speedMultiplier = sameAsIntake ? FEED_SPEED : 1.0; // 将防走火反转速度从 0.5 提升到 0.6 或更高
+
+        double pos = clamp01(0.5 + dir * (sameAsIntake ? FEED_SPEED : -speedMultiplier));
         if (feedServo != null) {
             feedServo.setPosition(pos);
         }
@@ -204,7 +208,6 @@ public class RobotHardwareV0 {
         return 0.5;
     }
 
-    /** 设置前部双舵机三档位 */
     public void setFrontServosMode(ServoPositionMode mode) {
         double lowerAngle;
         switch (mode) {
