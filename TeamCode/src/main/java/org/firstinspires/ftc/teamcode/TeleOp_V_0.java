@@ -27,8 +27,8 @@ public class TeleOp_V_0 extends LinearOpMode {
     private boolean triggerPrev = false;
     private double feedUntil = 0.0;
 
-    // 当前舵机档位状态
-    private RobotHardwareV0.ServoPositionMode currentServoMode = RobotHardwareV0.ServoPositionMode.DOWN;
+    // 当前舵机档位状态：初始为上键（LIFT）状态
+    private RobotHardwareV0.ServoPositionMode currentServoMode = RobotHardwareV0.ServoPositionMode.LIFT;
 
     @Override
     public void runOpMode() {
@@ -54,7 +54,6 @@ public class TeleOp_V_0 extends LinearOpMode {
             double rawLateral = curve(gamepad1.left_stick_x);
             double rawYaw = curve(gamepad1.right_stick_x);
 
-            // 底盘慢速：按住左侧小扳机（left_bumper）时降低底盘灵敏度
             boolean chassisSlow = gamepad1.left_bumper;
             double slowScale = chassisSlow ? SLOW_MODE_SCALE : 1.0;
             double[] wheelPowers = robot.driveMecanum(rawAxial * slowScale, rawLateral * slowScale, rawYaw * slowScale);
@@ -75,11 +74,11 @@ public class TeleOp_V_0 extends LinearOpMode {
 
             // ---------- 前部舵机三档位键位控制（十字键） ----------
             if (gamepad1.dpad_up) {
-                currentServoMode = RobotHardwareV0.ServoPositionMode.LIFT;       // 十字键上：抬起
+                currentServoMode = RobotHardwareV0.ServoPositionMode.LIFT;       // 十字键上：1口42° / 2口75°
             } else if (gamepad1.dpad_right || gamepad1.dpad_left) {
-                currentServoMode = RobotHardwareV0.ServoPositionMode.MIDDLE;    // 十字键左右：中置挡球
+                currentServoMode = RobotHardwareV0.ServoPositionMode.MIDDLE;    // 十字键左右：1口9° / 2口42°
             } else if (gamepad1.dpad_down) {
-                currentServoMode = RobotHardwareV0.ServoPositionMode.DOWN;      // 十字键下：放下贴地
+                currentServoMode = RobotHardwareV0.ServoPositionMode.DOWN;      // 十字键下：1口0° / 2口33°
             }
             robot.setFrontServosMode(currentServoMode);
 
@@ -111,7 +110,7 @@ public class TeleOp_V_0 extends LinearOpMode {
             telemetry.addData("摇杆", "前进 %.2f | 平移 %.2f | 旋转 %.2f", rawAxial, rawLateral, rawYaw);
             telemetry.addData("底盘", "LF %.2f RF %.2f LB %.2f RB %.2f", wheelPowers[0], wheelPowers[1], wheelPowers[2], wheelPowers[3]);
             telemetry.addData("进料 (LB)", "%s  功率 %.2f", intakeOn ? "开" : "关", intakePower);
-            telemetry.addData("发射 (RB)", "%s (纯Power驱动)", shooterOn ? "开" : "关");
+            telemetry.addData("发射 (RB)", "%s  功率 %.2f", shooterOn ? "开" : "关", shooterOn ? RobotHardwareV0.SHOOTER_POWER : 0.0);
             telemetry.addData("前舵机档位 (Dpad)", "当前模式: %s", currentServoMode);
             telemetry.addData("射球", firing ? String.format("同向出球，还剩 %.0f ms", feedUntil - now) : "就绪（按右扳机）");
             telemetry.addData("0 口舵机", "%.2f", feedPos);
@@ -132,7 +131,7 @@ public class TeleOp_V_0 extends LinearOpMode {
         telemetry.addData("舵机", "进料舵机(0): %s | 上方(1): %s | 下方(2): %s", robot.feedServo != null, robot.frontUpper != null, robot.frontLower != null);
         telemetry.addLine("------------------------------------");
         telemetry.addLine("LB = 进料开关   RB = 发射轮开关   右扳机 = 射球");
-        telemetry.addLine("十字键上=抬起 | 十字键左右=中置挡球 | 十字键下=放下贴地");
+        telemetry.addLine("十字键上(初始)=1口42°/2口75° | 左右=1口9°/2口42° | 下=1口0°/2口33°");
         telemetry.update();
     }
 

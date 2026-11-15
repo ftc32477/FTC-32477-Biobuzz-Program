@@ -13,8 +13,11 @@ import java.util.Map;
 /**
  * 32477 Biobuzz 赛季初代车硬件类 (V0)
  * 更新：
- * 1. 更新了前部双舵机三档位角度（DOWN=12.0, MIDDLE=45.0, LIFT=75.0）
- * 2. 连续舵机 FEED_SPEED 提升至 0.50（拉满到极限速度）
+ * 1. 前部双舵机三档位实测数据：
+ *    - LIFT (上键/初始): 2口 75° / 1口 42°
+ *    - MIDDLE (左右键): 2口 42° / 1口 9°
+ *    - DOWN (下键): 2口 33° / 1口 0°
+ * 2. 发射轮功率调整为 0.6
  */
 public class RobotHardwareV0 {
 
@@ -42,28 +45,27 @@ public class RobotHardwareV0 {
     public static final double SHOOTER_POWER = 0.6;
     public static final boolean SHOOTER_R_REVERSED = true;
 
-    /** 0 口连续旋转舵机参数：拉满到 0.50 追求最快转速 */
     public static final double FEED_SPEED = 0.50;
     public static final long FEED_TIME_MS = 1000L;
     public static final boolean FEED_SERVO_REVERSED = true;
 
     // ========================================================================
-    // 3. 前部双舵机三档位参数（已更新）
+    // 3. 前部双舵机三档位参数（1口上方 = 2口下方 - 33.0°）
     // ========================================================================
     public static final double FRONT_RANGE_DEG = 180.0;
     public static final boolean UPPER_REVERSED = false;
     public static final boolean LOWER_REVERSED = true;
     public static final double UPPER_OFFSET_DEG = 33.0;
 
-    // 档位定义：下方舵机目标角度
-    public static final double LOWER_DEG_DOWN = 12.0;   // 档位1：放下贴地
-    public static final double LOWER_DEG_MIDDLE = 45.0; // 档位2：中置挡球
-    public static final double LOWER_DEG_LIFT = 75.0;   // 档位3：抬起
+    // 档位定义：以 2 口（下方舵机）为基准角度
+    public static final double LOWER_DEG_LIFT = 75.0;   // 上键（抬起/初始）：2口 75°，1口 42°
+    public static final double LOWER_DEG_MIDDLE = 42.0; // 左右键（中置挡球）：2口 42°，1口 9°
+    public static final double LOWER_DEG_DOWN = 33.0;   // 下键（放下贴地）：2口 33°，1口 0°
 
     public enum ServoPositionMode {
-        DOWN,   // 放下贴地
-        MIDDLE, // 中置挡球
-        LIFT    // 抬起
+        LIFT,   // 上键：抬起（初始状态）
+        MIDDLE, // 左右键：中置挡球
+        DOWN    // 下键：放下贴地
     }
 
     // ========================================================================
@@ -126,7 +128,8 @@ public class RobotHardwareV0 {
         frontUpper = findServoByPort(UPPER_SERVO_PORT);
         frontLower = findServoByPort(LOWER_SERVO_PORT);
 
-        setFrontServosMode(ServoPositionMode.DOWN);
+        // 初始化默认为上键（LIFT）状态：2口 75°，1口 42°
+        setFrontServosMode(ServoPositionMode.LIFT);
         stopFeedServo();
     }
 
@@ -190,11 +193,7 @@ public class RobotHardwareV0 {
 
     public double runFeedServo(boolean sameAsIntake) {
         double dir = (FEED_SERVO_REVERSED ? -1.0 : 1.0) * (INTAKE_REVERSED ? -1.0 : 1.0);
-
-        // 如果不是同向出球（即处于防走火的反转状态），给予更大的速度权重甚至顶到极限 0.0 或 1.0
-        double speedMultiplier = sameAsIntake ? FEED_SPEED : 1.0; // 将防走火反转速度从 0.5 提升到 0.6 或更高
-
-        double pos = clamp01(0.5 + dir * (sameAsIntake ? FEED_SPEED : -speedMultiplier));
+        double pos = clamp01(0.5 + dir * (sameAsIntake ? FEED_SPEED : -FEED_SPEED));
         if (feedServo != null) {
             feedServo.setPosition(pos);
         }
@@ -212,14 +211,14 @@ public class RobotHardwareV0 {
         double lowerAngle;
         switch (mode) {
             case MIDDLE:
-                lowerAngle = LOWER_DEG_MIDDLE;
-                break;
-            case LIFT:
-                lowerAngle = LOWER_DEG_LIFT;
+                lowerAngle = LOWER_DEG_MIDDLE; // 42° (1口 9°)
                 break;
             case DOWN:
+                lowerAngle = LOWER_DEG_DOWN;   // 33° (1口 0°)
+                break;
+            case LIFT:
             default:
-                lowerAngle = LOWER_DEG_DOWN;
+                lowerAngle = LOWER_DEG_LIFT;   // 75° (1口 42°)
                 break;
         }
         double upperAngle = lowerAngle - UPPER_OFFSET_DEG;
