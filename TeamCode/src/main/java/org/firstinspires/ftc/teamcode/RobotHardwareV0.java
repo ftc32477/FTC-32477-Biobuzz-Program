@@ -33,7 +33,7 @@ public class RobotHardwareV0 {
     public static final double INTAKE_POWER = 0.8;
     public static final boolean INTAKE_REVERSED = false;
 
-    public static final double SHOOTER_POWER = 0.6;
+    public static final double SHOOTER_POWER = 1.0;
     public static final boolean SHOOTER_R_REVERSED = true;
 
     public static final double FEED_SPEED = 0.50;
