@@ -27,7 +27,7 @@ public class ServoAngleTestOpMode extends LinearOpMode {
     private static final double FRONT_RANGE_DEG = 180.0;
     private static final boolean UPPER_REVERSED = false;
     private static final boolean LOWER_REVERSED = true;
-    private static final double UPPER_OFFSET_DEG = 33.0;
+    private static final double UPPER_OFFSET_DEG = 0.0;
 
     private Servo frontUpper;
     private Servo frontLower;

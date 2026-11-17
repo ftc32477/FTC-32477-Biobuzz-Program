@@ -13,7 +13,9 @@ import java.util.Map;
 /**
  * 32477 Biobuzz 赛季初代车硬件类 (V0)
  * 更新：
- * - 新增 setIntakeReverse() 方法支持按住 A 键反转吐球
+ * 1. 取消双舵机角度偏差（上下舵机目标角度一致）
+ * 2. 档位调整：下档 45°、中档 70°、上档 105°
+ * 3. 初始化默认设为上档 (105°)
  */
 public class RobotHardwareV0 {
 
@@ -46,22 +48,21 @@ public class RobotHardwareV0 {
     public static final boolean FEED_SERVO_REVERSED = true;
 
     // ========================================================================
-    // 3. 前部双舵机三档位参数（1口上方 = 2口下方 - 33.0°）
+    // 3. 前部双舵机三档位参数（上下舵机无偏差，同步调平）
     // ========================================================================
     public static final double FRONT_RANGE_DEG = 180.0;
     public static final boolean UPPER_REVERSED = false;
     public static final boolean LOWER_REVERSED = true;
-    public static final double UPPER_OFFSET_DEG = 33.0;
 
-    // 档位定义：以 2 口（下方舵机）为基准角度
-    public static final double LOWER_DEG_LIFT = 75.0;   // 上键（抬起/初始）：2口 75°，1口 42°
-    public static final double LOWER_DEG_MIDDLE = 42.0; // 左右键（中置挡球）：2口 42°，1口 9°
-    public static final double LOWER_DEG_DOWN = 33.0;   // 下键（放下贴地）：2口 33°，1口 0°
+    // 新档位定义（上下舵机角度一致）
+    public static final double DEG_DOWN = 45.0;   // 下档：45°
+    public static final double DEG_MIDDLE = 70.0; // 中档：70°
+    public static final double DEG_LIFT = 105.0;  // 上档：105°（初始化状态）
 
     public enum ServoPositionMode {
-        LIFT,   // 上键：抬起（初始状态）
-        MIDDLE, // 左右键：中置挡球
-        DOWN    // 下键：放下贴地
+        DOWN,   // 下档 (45°)
+        MIDDLE, // 中档 (70°)
+        LIFT    // 上档 (105°，初始默认)
     }
 
     // ========================================================================
@@ -124,7 +125,7 @@ public class RobotHardwareV0 {
         frontUpper = findServoByPort(UPPER_SERVO_PORT);
         frontLower = findServoByPort(LOWER_SERVO_PORT);
 
-        // 初始化默认为上键（LIFT）状态：2口 75°，1口 42°
+        // 初始化默认设为上档 (105°)
         setFrontServosMode(ServoPositionMode.LIFT);
         stopFeedServo();
     }
@@ -166,7 +167,6 @@ public class RobotHardwareV0 {
         return new double[]{lf, rf, lb, rb};
     }
 
-    /** 正常进料开关控制 */
     public double setIntakeActive(boolean active) {
         if (intake == null) return 0.0;
         double power = active ? (INTAKE_REVERSED ? -INTAKE_POWER : INTAKE_POWER) : 0.0;
@@ -174,7 +174,6 @@ public class RobotHardwareV0 {
         return power;
     }
 
-    /** 进料电机反转吐球（按住 A 键时调用） */
     public double setIntakeReverse() {
         if (intake == null) return 0.0;
         double power = INTAKE_REVERSED ? INTAKE_POWER : -INTAKE_POWER;
@@ -213,25 +212,26 @@ public class RobotHardwareV0 {
     }
 
     public void setFrontServosMode(ServoPositionMode mode) {
-        double lowerAngle;
+        double targetAngle;
         switch (mode) {
-            case MIDDLE:
-                lowerAngle = LOWER_DEG_MIDDLE; // 42° (1口 9°)
-                break;
             case DOWN:
-                lowerAngle = LOWER_DEG_DOWN;   // 33° (1口 0°)
+                targetAngle = DEG_DOWN;   // 下档: 45°
+                break;
+            case MIDDLE:
+                targetAngle = DEG_MIDDLE; // 中档: 70°
                 break;
             case LIFT:
             default:
-                lowerAngle = LOWER_DEG_LIFT;   // 75° (1口 42°)
+                targetAngle = DEG_LIFT;   // 上档: 105°
                 break;
         }
-        double upperAngle = lowerAngle - UPPER_OFFSET_DEG;
+
+        // 上下舵机使用相同的目标角度
         if (frontLower != null) {
-            frontLower.setPosition(angleToPos(lowerAngle, FRONT_RANGE_DEG, LOWER_REVERSED));
+            frontLower.setPosition(angleToPos(targetAngle, FRONT_RANGE_DEG, LOWER_REVERSED));
         }
         if (frontUpper != null) {
-            frontUpper.setPosition(angleToPos(upperAngle, FRONT_RANGE_DEG, UPPER_REVERSED));
+            frontUpper.setPosition(angleToPos(targetAngle, FRONT_RANGE_DEG, UPPER_REVERSED));
         }
     }
 
